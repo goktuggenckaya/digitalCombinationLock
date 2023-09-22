@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<circuit>
+  <version>2</version>
+  <attributes>
+    <entry>
+      <string>romContent</string>
+      <romList>
+        <roms/>
+      </romList>
+    </entry>
+    <entry>
+      <string>Width</string>
+      <int>6</int>
+    </entry>
+  </attributes>
+  <visualElements>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>ID</string>
+        </entry>
+      </elementAttributes>
+      <pos x="320" y="300"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>PWD</string>
+        </entry>
+      </elementAttributes>
+      <pos x="320" y="440"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>DIS</string>
+        </entry>
+      </elementAttributes>
+      <pos x="320" y="580"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>RESET</string>
+        </entry>
+      </elementAttributes>
+      <pos x="320" y="620"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>IDO</string>
+        </entry>
+      </elementAttributes>
+      <pos x="780" y="320"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>PWDO</string>
+        </entry>
+      </elementAttributes>
+      <pos x="780" y="460"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>CLK</string>
+        </entry>
+      </elementAttributes>
+      <pos x="320" y="680"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>RST</string>
+        </entry>
+      </elementAttributes>
+      <pos x="320" y="720"/>
+    </visualElement>
+    <visualElement>
+      <elementName>External</elementName>
+      <elementAttributes>
+        <entry>
+          <string>applicationType</string>
+          <appType>IVERILOG</appType>
+        </entry>
+        <entry>
+          <string>Label</string>
+          <string>mode_selector</string>
+        </entry>
+        <entry>
+          <string>externalInputs</string>
+          <string>clk,reset,ID,PWD,DIS,timer_reset</string>
+        </entry>
+        <entry>
+          <string>Width</string>
+          <int>8</int>
+        </entry>
+        <entry>
+          <string>externalOutputs</string>
+          <string>PWDO,IDO</string>
+        </entry>
+        <entry>
+          <string>Code</string>
+          <string>module mode_selector (
+  input wire clk,         // Clock signal
+  input wire reset,       // Classic reset signal
+  input wire ID,          // ID button
+  input wire PWD,         // PASSWORD button
+  input wire DIS,         // Timer output signal
+  input wire timer_reset, // Reset signal from timer circuit
+  output wire PWDO,       // Password output
+  output wire IDO         // ID output
+);
+
+  reg [1:0] mode_reg;     // Register to store the current mode
+  reg [1:0] prev_mode;    // Register to store the previous mode
+  reg DIS_prev;           // Register to store the previous DIS signal
+  reg deasserted;         // Flag to track DIS deassertion
+
+  always @(posedge clk or posedge reset or posedge timer_reset) begin
+    if (~reset) begin
+      mode_reg &lt;= 2&apos;b01;       // Reset the mode to initial state (ID mode)
+      DIS_prev &lt;= 1&apos;b0;        // Reset the previous DIS signal
+      deasserted &lt;= 0;         // Reset the deasserted flag
+    end else begin
+      // Mode transition logic based on button inputs and DIS signal
+      if (ID) begin
+        prev_mode &lt;= mode_reg; // Store the previous mode
+        mode_reg &lt;= 2&apos;b01;     // Switch to ID mode when ID is asserted
+        deasserted &lt;= 0;       // Reset the deasserted flag
+      end else if (PWD) begin
+        prev_mode &lt;= mode_reg; // Store the previous mode
+        mode_reg &lt;= 2&apos;b10;     // Switch to PASSWORD mode when PWD is asserted
+        deasserted &lt;= 0;       // Reset the deasserted flag
+      end else if (DIS &amp;&amp; ~DIS_prev &amp;&amp; (mode_reg == 2&apos;b10)) begin
+        prev_mode &lt;= mode_reg; // Store the previous mode
+        deasserted &lt;= 1;       // Set the deasserted flag
+      end else if (~DIS &amp;&amp; (mode_reg == 2&apos;b10) &amp;&amp; deasserted) begin
+        prev_mode &lt;= mode_reg; // Store the previous mode
+        mode_reg &lt;= 2&apos;b01;     // Switch to ID mode when DIS is deasserted after being asserted
+        deasserted &lt;= 0;       // Reset the deasserted flag
+      end else if (DIS &amp;&amp; (mode_reg == 2&apos;b01)) begin
+        prev_mode &lt;= mode_reg; // Store the previous mode
+        deasserted &lt;= 0;       // Reset the deasserted flag
+      end else if (timer_reset) begin
+        mode_reg &lt;= 2&apos;b01;     // Reset to ID mode when timer is reset
+        deasserted &lt;= 0;       // Reset the deasserted flag
+      end
+
+      DIS_prev &lt;= DIS;         // Update the previous DIS signal
+    end
+  end
+
+  // Output logic based on the current mode
+  assign PWDO = (mode_reg == 2&apos;b10) ? 1&apos;b1 : 1&apos;b0;
+  assign IDO = (mode_reg == 2&apos;b01) ? 1&apos;b1 : 1&apos;b0;
+
+endmodule</string>
+        </entry>
+      </elementAttributes>
+      <pos x="500" y="420"/>
+    </visualElement>
+  </visualElements>
+  <wires>
+    <wire>
+      <p1 x="700" y="320"/>
+      <p2 x="780" y="320"/>
+    </wire>
+    <wire>
+      <p1 x="320" y="720"/>
+      <p2 x="460" y="720"/>
+    </wire>
+    <wire>
+      <p1 x="400" y="480"/>
+      <p2 x="500" y="480"/>
+    </wire>
+    <wire>
+      <p1 x="660" y="420"/>
+      <p2 x="740" y="420"/>
+    </wire>
+    <wire>
+      <p1 x="480" y="420"/>
+      <p2 x="500" y="420"/>
+    </wire>
+    <wire>
+      <p1 x="440" y="500"/>
+      <p2 x="500" y="500"/>
+    </wire>
+    <wire>
+      <p1 x="320" y="580"/>
+      <p2 x="440" y="580"/>
+    </wire>
+    <wire>
+      <p1 x="660" y="440"/>
+      <p2 x="700" y="440"/>
+    </wire>
+    <wire>
+      <p1 x="460" y="440"/>
+      <p2 x="500" y="440"/>
+    </wire>
+    <wire>
+      <p1 x="320" y="440"/>
+      <p2 x="400" y="440"/>
+    </wire>
+    <wire>
+      <p1 x="320" y="680"/>
+      <p2 x="480" y="680"/>
+    </wire>
+    <wire>
+      <p1 x="380" y="520"/>
+      <p2 x="500" y="520"/>
+    </wire>
+    <wire>
+      <p1 x="740" y="460"/>
+      <p2 x="780" y="460"/>
+    </wire>
+    <wire>
+      <p1 x="440" y="460"/>
+      <p2 x="500" y="460"/>
+    </wire>
+    <wire>
+      <p1 x="320" y="300"/>
+      <p2 x="440" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="320" y="620"/>
+      <p2 x="380" y="620"/>
+    </wire>
+    <wire>
+      <p1 x="480" y="420"/>
+      <p2 x="480" y="680"/>
+    </wire>
+    <wire>
+      <p1 x="400" y="440"/>
+      <p2 x="400" y="480"/>
+    </wire>
+    <wire>
+      <p1 x="740" y="420"/>
+      <p2 x="740" y="460"/>
+    </wire>
+    <wire>
+      <p1 x="440" y="300"/>
+      <p2 x="440" y="460"/>
+    </wire>
+    <wire>
+      <p1 x="440" y="500"/>
+      <p2 x="440" y="580"/>
+    </wire>
+    <wire>
+      <p1 x="700" y="320"/>
+      <p2 x="700" y="440"/>
+    </wire>
+    <wire>
+      <p1 x="460" y="440"/>
+      <p2 x="460" y="720"/>
+    </wire>
+    <wire>
+      <p1 x="380" y="520"/>
+      <p2 x="380" y="620"/>
+    </wire>
+  </wires>
+  <measurementOrdering/>
+</circuit>
